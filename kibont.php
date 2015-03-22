@@ -1,5 +1,6 @@
 <?php
-$dir='EURUSD/2014/08';//kibontandó mappa
+$pair='EURUSD/';
+$datum_mappa='2014/08'; //$dir=$pair.$datum_mappa;//kibontandó mappa a dir_nyit() függvény használja
 $www_mappa='g:/www/forex'; // nem kell könyvtár elválasaztó a végére:/  !!!!!!!!!!
 $out_elotag='csv_'; // A kimenő adatok fő könyvtáránk létrehozásához kell
 $felulir='nem'; // ha létezik a kimenő file nem csinál semmit ha 'igen' felülírja
@@ -7,11 +8,12 @@ $extract = '';
 $iswindows = true;
 $point = 0.00001;
 $csinal='';
-$outdir_tomb=explode('/',$out_elotag.$dir);
+$outdir_tomb=explode('/',$out_elotag.$pair.$datum_mappa);
 foreach ( $outdir_tomb as $od ) {
-    $csinal=$csinal.'/'.$od;
-   if(!is_dir($www_mappa.$csinal)){mkdir($www_mappa.$csinal);}
-
+    $csinal = $csinal . '/' . $od;
+    if (!is_dir($www_mappa . $csinal)) {
+        mkdir($www_mappa . $csinal);
+    }
 }
 
 //------------------------------------------------------------------
@@ -28,10 +30,11 @@ unlink($tmpdir);
 mkdir($tmpdir);
 
 
-function dir_nyit($dir){
-
+function dir_nyit($pair,$datum_mappa){
 global $www_mappa;
 global $out_elotag ;
+    $dir=$pair.$datum_mappa;//kibontandó mappa
+    $datum = str_replace('-', '/',$datum_mappa );
 
     if(is_dir($www_mappa.'/'.$dir))
     {
@@ -42,16 +45,18 @@ global $out_elotag ;
                  if (is_dir($www_mappa.'/'.$dir .'/'.$filename)) {
                      echo "mappa:" . $filename. "\n";
                            if(!is_dir($www_mappa.'/'.$out_elotag.$dir.'/'.$filename)){mkdir($www_mappa.'/'.$out_elotag.$dir.'/'.$filename);}
-                            dir_nyit($dir.'/'.$filename);
+                            dir_nyit($pair,$datum_mappa.'/'.$filename);
                  } else {
                      echo "file:" .$filename. "\n";
 
-                    //$egynap= egy_napos_string($datum);
-                    $egynap= '99999';
-                  $filenev_bont=explode('_',$filename) ;
-                  $ujfilenev=$filenev_bont[0].'.csv';
+                 $ora=substr($filename, 0, 2);
+                 $idobelyeg= strtotime($datum.' '.$ora.':00:00');
+                     echo $idobelyeg. "\n";
+                     $egy_ora= decode_ducascopy_bi5($www_mappa.'/'.$dir.'/'.$filename, $idobelyeg);
+                    // $egy_ora=  $idobelyeg;
+                 $ujfilenev=$ora.'.csv';
                  $outfd = fopen($www_mappa.'/'.$out_elotag.$dir.'/'.$ujfilenev,'a+');
-                 if(!empty($egynap)){fwrite($outfd,$egynap);}
+                fwrite($outfd,$egy_ora);
                  fclose($outfd);
 
                  }
@@ -60,20 +65,8 @@ global $out_elotag ;
     }else{echo 'hiba nem létező könyvtárnév'.$www_mappa.'/'.$dir;}
 }
 
-dir_nyit($dir);
+dir_nyit($pair,$datum_mappa);
 
-function egy_napos_string($datum) {
-global $pair;
-$orak='';
-$localpath = "$pair/".$datum.'/';
-$date1 = str_replace('-', '/', $datum);
-for($i = strtotime($date1); $i < strtotime($date1 . "+1 days"); $i += 3600) {
- $hour = gmstrftime('%H',$i);
-	$localfile = $localpath.$hour."h_ticks.bi5";
-	if (filesize($localfile) > 0) { $orak=$orak.decode_ducascopy_bi5($localfile,$i);}
-}
-return $orak;
-}
 
 function decode_ducascopy_bi5($fname, $hourtimestamp) {
     print "$fname\n";
@@ -127,10 +120,11 @@ $sor='';
         }
         if ($ask == intval($ask)) {
             $ask = number_format($ask, 1, '.', '');
-        }	
-	
+        }
+
         $sor=$sor.date('Y-m-d H:i:s', $timesec).','.$timesec.','.$bid.','.number_format($bidvol,2,'.','').','.$ask.','.number_format($askvol,2,'.','')."\n";
-	
+       // $sor=$sor. gmstrftime("%Y.%m.%d %H:%M:%S", $timesec).".".str_pad($timems,3,'0',STR_PAD_LEFT).",$bid,$ask,".number_format($bidvol,2,'.','').",".number_format($askvol,2,'.','')."\n";
+
         $idx += 20;
     }
 return $sor;
