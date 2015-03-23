@@ -1,164 +1,101 @@
-<?php 
-class Adatbazis
+<?php
+class DB
 {
-public $con=null;
-
-function kapcsolat() 
-{
-$con = mysql_connect('localhost','root','');
-mysql_query("SET NAMES 'utf8'");
-mysql_query("SET CHARACTER SET 'utf8'");
-mysql_query("SET COLLATION_CONNECTION='utf8_general_ci'");
-mysql_query("SET character_set_results = 'utf8'");
-mysql_query("SET character_set_server = 'utf8'");
-mysql_query("SET character_set_client = 'utf8'");
-mysql_select_db('eurusd') ;
-if (mysqli_connect_errno())
-  {
-  echo "Failed to connect to MySQL: " . mysqli_connect_error();
-  }
-}
-
-function __construct(){$this->kapcsolat();}
-
-function parancs($sql) 
-{
-$result = mysql_query($sql);
- if (!$result) {
-	  global $hiba; global $userid;
-       $hiba['sql'][]=array('ido'=>date("Y-m-d H:i:s") ,'userid'=>$userid,'fuggveny'=>'parancs('.$sql.')','hiba' =>mysql_error());
- }
-// if(!empty(mysql_error()){$result= mysql_error();}
-//echo '<br/>parancs hiba:'.mysql_error();
-return $result;
-}
-function adat_ir($sql,$ir='nem')
-{
-$result = mysql_query($sql);
- if (!$result) {
-	  global $hiba; global $userid;
-       $hiba['sql'][]=array('ido'=>date("Y-m-d H:i:s") ,'userid'=>$userid,'fuggveny'=>'adat_ir('.$sql.','.$ir.')','hiba' =>mysql_error());
- }
-if($ir=='igen'){$result= mysql_insert_id();}  
-
-return $result;
-}
-
-function indexelt_sor($sql)
-{
-$result = mysql_query($sql);
- if (!$result) {
-	  global $hiba; global $userid;
-       $hiba['sql'][]=array('ido'=>date("Y-m-d H:i:s") ,'userid'=>$userid ,'fuggveny'=>'indexelt_sor('.$sql.')','hiba' =>mysql_error());
- }
-
-if(!empty($result)){$eredmeny = mysql_fetch_row($result);}
-return $eredmeny;
-}
-function indexelt_tomb($sql)
-{
-$result = mysql_query($sql);
- if (!$result) {
-	  global $hiba; global $userid;
-       $hiba['sql'][]=array('ido'=>date("Y-m-d H:i:s") ,'userid'=>$userid ,'fuggveny'=>'indexelt_sor('.$sql.','.$ir.')','hiba' =>mysql_error());
- }
-	if(!empty($result))
-	{
-	while ($sor=mysql_fetch_row($result))
-	   {
-	  $eredmeny[]=$sor;
-	   }
-	}
-return $eredmeny;	
-}
-
-function assoc_sor($sql)
-{
-$result = mysql_query($sql);
- if (!$result) {
-	  global $hiba; global $userid;
-       $hiba['sql'][]=array('ido'=>date("Y-m-d H:i:s") ,'userid'=>$userid,'fuggveny'=>'assoc_sor('.$sql.')','hiba' =>mysql_error());
- }else{if(!empty($result)){$eredmeny = mysql_fetch_assoc($result);}}
-return $eredmeny;
-}
-function assoc_tomb($sql)
-{
-$result = mysql_query($sql);
- if (!$result) {
-	  global $hiba; global $userid;
-       $hiba['sql'][]=array('ido'=>date("Y-m-d H:i:s") ,'userid'=>$userid,'fuggveny'=>'assoc_tomb('.$sql.')','hiba' =>mysql_error());
- }else{if(!empty($result)){while ($sor=mysql_fetch_assoc($result)) { $eredmeny[]=$sor;}}}
-return $eredmeny;	
-}
-}
-class Lekerdez {
-
-function torol_sor($tabla,$id) 
-{
-$sql="DELETE FROM $tabla WHERE id = '$id'";
-$ob=new Adatbazis;$result=$ob->parancs($sql); return $result; 
-}
-function parancs($sql)
-{$ob=new Adatbazis;$result=$ob->parancs($sql); return $result;}
-
-function adat_ir($sql,$ir='nem')
-{$ob=new Adatbazis;$result=$ob->adat_ir($sql,$ir); return $result;}
-function beszur($sql,$ir='igen')
-{$ob=new Adatbazis;$result=$ob->adat_ir($sql,$ir); return $result;}
-
-function indexelt_sor($sql)
-{$ob=new Adatbazis;$result=$ob->indexelt_sor($sql); return $result;}
-
-function indexelt_tomb($sql)
-{$ob=new Adatbazis;$result=$ob->indexelt_tomb($sql); return $result;}
-
-function assoc_sor($sql)
-{$ob=new Adatbazis;$result=$ob->assoc_sor($sql); return $result;}
-
-function assoc_tomb($sql)
-{$ob=new Adatbazis;$result=$ob->assoc_tomb($sql); return $result;}
-
-function mezonevek($table){
-// a table változóban megadott tábla mezőnveivel tér vissza egy indexelt tömbben -------------
- $result =Lekerdez::parancs('SHOW COLUMNS FROM '.$table);
- // $result = mysql_query("SHOW COLUMNS FROM ". $table);
-      $fieldnames=array();
-      if (mysql_num_rows($result) > 0) {
-        while ($row = mysql_fetch_assoc($result)) {
-          $fieldnames[] = $row['Field'];
+    static public function connect(){
+        try {
+            $db = new PDO("mysql:dbname=".MoConfig::$adatbazis.";host=".MoConfig::$host,MoConfig::$felhasznalonev, MoConfig::$jelszo, array(PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES \'UTF8\''));
+            //$db->pdo->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING );
+        } catch (PDOException $e) {
+            die(GOB::$hiba['pdo']="Adatbazis kapcsolodasi hiba: ".$e->getMessage());
+            return false;
         }
-      }
-  return $fieldnames;
-} 
+        return $db;
+    }
+    static public function parancs($sql){
+        $sth =self::alap($sql);
+    }
+    static public function alap($sql){
+        global $db;
+        $sth = $db->prepare($sql);
+        $sth->execute();
+        //GOB::$hiba][]="assoc_tomb: ".$sth->errorInfo(); nem jó!!!
+        //tömbhöz nem lehet hozzáfűzni	stringet!!!!!!!!!!!!!!!!!
+      //  $h=$sth->errorInfo();
+        //echo 'ffffffffffffffffffffff:'.$h[2].'</br>';
+       // if(!empty($h[2])){GOB::$hiba['pdo'][]=$sth->errorInfo();	}
+        return $sth;
+    }
+    static public function assoc_tomb($sql){
+        $sth =self::alap($sql);
+        while($row = $sth->fetch(PDO::FETCH_ASSOC)) {
+            $eredmeny_tomb[]= $row;
+            //$row= $sth->fetchAll();//sorszámozottan is és associatívan is tárolja a mezőket(duplán)
+        }
+        return $eredmeny_tomb;
+    }
+    static public function assoc_sor($sql){
+        $sth =self::alap($sql);
+        return $sth->fetch(PDO::FETCH_ASSOC);
+    }
+
+    static public function beszur($sql){
+        $sth =self::alap($sql);
+       // return $db->lastInsertId();
+    }
+
+    static public function torol_sor($tabla,$id,$id_nev='id')
+    {
+        $sql="DELETE FROM $tabla WHERE $id_nev = '$id'";
+        $sth =self::alap($sql);
+    }
+
+    static public function torol_tobb_sor($tabla,$id_tomb=[],$id_nev='id')
+    {
+        foreach($id_tomb as $id){self::torol_sor($tabla,$id,$id_nev); }
+    }
 }
+class MoConfig {
 
-
-class Feltolt {
-function insert_ment($tabla,$mezok){
-$mezotomb=explode(',',$mezok);
-foreach ($mezotomb as $mezo){
-$ertek=$ertek."'".$_POST[$mezo]."',"; 
-$clm=$clm.$mezo.","; 
+//public static $felhasznalonev = 'pnet354_motto001';
+//public static $jelszo = 'motto6814';
+//public static $adatbazis = 'pnet354_motto001_fejleszt';
+    public static $host = 'localhost';
+    public static $felhasznalonev = 'root';
+    public static $jelszo = '';
+    public static $adatbazis = 'eurusd';
+    public static $mailfrom= 'motto001@gmail.com';
+    public static $fromnev= 'Admin';
+    public static $offline = 'nem'; //igen bekapcsolja az offline módot
+    public static $offline_message = 'Weblapunk fejlesztés alatt.';
 }
-$clm2=rtrim($clm);
-$ertek2=rtrim($ertek);
-$sql="INSERT INTO table_name ($clm2) VALUES ($ertek2)";
-$ob=new Adatbazis;$result=$ob->parancs($sql); return $result;
+class ADAT
+{
 
-}
-//Feltolt::update_ment('userek','foto,name,pubname,leiras,cimke',$userid);
-function update_ment($tabla,$mezok,$id=''){
-$mezotomb=explode(',',$mezok);
-foreach ($mezotomb as $mezo){$setek=$setek.$mezo."='".$_POST[$mezo]."', ";}
-
-//$setek2=rtrim($setek);
-$setek2 = substr($setek, 0, -2); 
-$sql="UPDATE $tabla SET $setek2 WHERE id='$id'";
+    static public function beszur_tombbol($tabla, $adat_tomb, $mezok = 'all')
+    {
+        if (is_array($mezok)) {
+            $mezotomb = $mezok;
+        } else {
+            $mezotomb = explode(',', $mezok);
+        }
+//print_r($adat_tomb);
+        foreach ($adat_tomb as $key => $value) {
+            if ($mezok == 'all') {
+                $ertek = $ertek . "'" . $value . "',";
+                $clm = $clm . $key . ",";
+            } else {
+                if (in_array($key, $mezotomb)) {
+                    $ertek = $ertek . "'" . $value . "',";
+                    $clm = $clm . $key . ",";
+                }
+            }
+        }
+        $clm2 = rtrim($clm, ',');
+        $ertek2 = rtrim($ertek, ',');
+        $sql = "INSERT INTO $tabla ($clm2) VALUES ($ertek2)";
+        $id = DB::beszur($sql);
 //echo $sql;
-$con = mysql_connect(MoConfig::$host,MoConfig::$felhasznalonev,MoConfig::$jelszo);
-mysql_select_db(MoConfig::$adatbazis) ;$result = mysql_query($sql);
-//$ob=new Adatbazis;$result=$ob->parancs($sql); return $result;
-
-}}
-	
+        return $id;
+    }
+}
 ?>

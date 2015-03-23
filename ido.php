@@ -1,10 +1,14 @@
 <?php
-//echo date('m-d-Y',1186185596).'</br>';
-echo date('Y-m-d H:i:s',mktime(0,0,0,07,07,2014)).'</br>'; //év-hónap-nap
+echo date('m-d-Y',1407189600).'</br>';
+//echo date('Y-m-d H:i:s',mktime(0,0,0,07,07,2014)).'</br>'; //év-hónap-nap
 //echo strtotime(05-05-2014).'</br>';
 //strtotime(): linux időbélyeggel tér vissza angol tipusú dátumból pl.: hónap-nap-év
-//echo strtotime(str_replace('/', '-', '06/06/2014')); 
-echo mktime(0,0,0,08,08,2014) ;
+//echo strtotime(str_replace('/', '-', '06/06/2014'));
+
+
+echo  strtotime('2014-11-01 00:00:00').'</br>' ;//ez ajó
+echo  strtotime('09/04/2014 00:00:00').'</br>' ;//ez ajó
+//echo mktime(0,0,0,04,08,2014) ;
 //strtotime(): linux időbélyeggel tér vissza angol tipusú dátumból pl.: hónap/nap/év
 
 $start="02-25-2016"; //hónap-nap-év
