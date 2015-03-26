@@ -8,43 +8,62 @@ $db=DB::connect();
  $www_mappa='g:/www/forex'; // nem kell könyvtár elválasaztó a végére:/  !!!!!!!!!!
 
  class Stat{
+	 // paraméterek------------------------
  $tabla	='';
  $intervallum=1;
  $aktualis_perc=0;
  $intervallum_db=1;
  $ora='';
-function __construct($tabla,$intervallum)
+ $munka_tomb=[];
+
+function __construct($tabla,$intervallum,$ora)
 {
 	$this->tabla = $tabla;
 	$this->intervallum = $intervallum;
+	$this->ora = $ora;
 }
 function futtat($file){
 	while (($line = fgetcsv($file)) !== FALSE) {
 
 		if($perc>$this->aktualis_perc) {
-			$this->feldolgoz($data);
+			$this->feldolgoz();
 			$this->aktualis_perc=$perc;
-			$data=[];
+			$this->munka_tomb=[];
+
 		}
 		//datum,időbélyeg,bid,bidvol,ask,askvol
 		$idobelyeg=round($line[1]);
 		$datum=$line[0];
 		$perc=substr($datum, 14, 2);
 		$this->ora=substr($datum, 11, 2);
-		$data['bid'][]=$line[2];
-		$data['bidvol'][]=$line[3];
-		$data['bid_ido'][]=[$bid,$idobelyeg];
+		$this->munka_tomb['bid'][]=$line[2];
+		$this->munka_tomb['bidvol'][]=$line[3];
+		$this->munka_tomb['bid_ido'][]=[$bid,$idobelyeg];
 	}
-	$this->feldolgoz($data);
+	$this->feldolgoz();
+	$this->aktualis_perc=0;
+	$this->munka_tomb=[];
 }
+	 function feldolgoz($munka_tomb,$elotag='') {
 
-	 function feldolgoz($data) {
-		 $rekord['atlag_ar'] = atlag($data['bid']);
 		 $rekord['datum'] = $datum;
 		 ADAT::beszur_tombbol('egyperces',$rekord , $mezok = 'all');
-		 $aktualis_perc=$perc;
-		 $adattomb=array();
+	 }
+	 function szamol($munka_tomb,$elotag='') {
+		 $min=0;$max=0;$db=1;$elozo=0;
+		 $rekord['meredekseg']=$this->meredekseg($this->munka_tomb['bid_ido']);
+		 foreach ($munka_tomb as $munka) {
+			 if($db==1){$min=$munka;$max=$munka;$elozo=$munka;}
+			 if($munka>$max){$rekord[$elotag.'max']=$munka;}
+			 if($munka<$min){$rekord[$elotag.'min']=$munka;}
+			 =$ossz+$munka;
+			 $db++;
 
+		 }
+		 $rekord[$elotag.'db']=$db;
+		 $rekord[$elotag.'atlag']=$ossz/$db;
+		 $rekord[$elotag.'szoras']=0;
+	return $rekord;
 	 }
 
 
@@ -90,16 +109,43 @@ function meredekseg($array) {
 $vRegression = new CRegressionLinear($array);
 $elso=$vRegression->predict(1);
 $utolso=$vRegression->predict(count($array);
-$meredekseg=$utolso-$elso;
+=$utolso-$elso;
 return $meredekseg;
 }
 function beir($rekord) {
-$average = array_sum($array) / count($array);
+$average = array_($array) / count($array);
 }
 
+ function calculate_median($arr) {
+	 sort($arr);
+	 $count = count($arr); //total numbers in array
+	 $middleval = floor(($count-1)/2); // find the middle value, or the lowest middle value
+	 if($count % 2) { // odd number, middle is the median
+		 $median = $arr[$middleval];
+	 } else { // even number, calculate avg of 2 medians
+		 $low = $arr[$middleval];
+		 $high = $arr[$middleval+1];
+		 $median = (($low+$high)/2);
+	 }
+	 return $median;
+ }
+ function calculate_median($arr)
+ {
+	 rsort($array);
+	 $middle = round(count($arr) / 2);
+	 $total = $array[$middle - 1];
+	 dir_nyit($pair, $datum_mappa);
+	 return $total;
+ }
 
+ function modus($arr)
+ {
+	 $v = array_count_values($arr);
+	 arsort($v);
+	 foreach($v as $k => $v){$total = $k; break;}
+	 return $total;
+ }
 
-dir_nyit($pair,$datum_mappa);
 
 ?>
 
