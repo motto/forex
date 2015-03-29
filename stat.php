@@ -37,8 +37,9 @@ function futtat($file){
 		$perc=substr($datum, 14, 2);
 		$this->ora=substr($datum, 11, 2);
 		$this->munka_tomb['bid'][]=$line[2];
-		$this->munka_tomb['bidvol'][]=$line[3];
-		$this->munka_tomb['bid_ido'][]=[$bid,$idobelyeg];
+		$this->munka_tomb['vol'][]=$line[3];
+		$this->munka_tomb['bid_ido'][]=[$line[2],$idobelyeg];
+		$this->munka_tomb['vol_ido'][]=[$line[3],$idobelyeg];
 	}
 	$this->feldolgoz();
 	$this->aktualis_perc=0;
@@ -63,6 +64,7 @@ function futtat($file){
 		 $rekord[$elotag.'db']=$db;
 		 $rekord[$elotag.'atlag']=$ossz/$db;
 		 $rekord[$elotag.'szoras']=0;
+		 $rekord[$elotag.'szoras_atlaghoz']=0;
 	return $rekord;
 	 }
 
