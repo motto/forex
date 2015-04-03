@@ -1,15 +1,15 @@
-  <?php 
+<?php
 class CRegressionLinear {
 
  private $mDatas; // input data, array of (x1,y1);(x2,y2);... pairs, or could just be a time-series (x1,x2,x3,...)
-  /** constructor */
+  /** constructor gfg */
   function __construct($pDatas) {
     $this->mDatas = $pDatas;
   }
   function calculate(){
     $n = count($this->mDatas);
     $vSumXX = $vSumXY = $vSumX = $vSumY = 0;
-    $vCnt = 0; 
+    $vCnt = 0;
     foreach ($this->mDatas AS $vOne){
       if (is_array($vOne)){
         list($x,$y) = $vOne;
