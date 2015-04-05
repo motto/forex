@@ -9,62 +9,99 @@ $db=DB::connect();
 
  class Stat{
 	 // paraméterek------------------------
- $tabla	='';
- $intervallum=1;
- $aktualis_perc=0;
- $intervallum_db=1;
- $ora='';
- $munka_tomb=[];
+ public $tabla	='egyperces';
+ public $intervallum=1;
+ public $intervallum_db=1;
+ //public	$perc ='';
+// public$ora ='' ;
+// public $nap = '';
+//public$honap = '';
+// public$ev ='' ;
 
-function __construct($tabla,$intervallum,$ora)
+function __construct($tabla='egyperces',$intervallum=1,$ora='00')
 {
 	$this->tabla = $tabla;
 	$this->intervallum = $intervallum;
 	$this->ora = $ora;
 }
 function futtat($file){
+	$indulo_perc=0; $munka_tomb=[];$aktualis_perc=0;
 	while (($line = fgetcsv($file)) !== FALSE) {
-
-		if($perc>$this->aktualis_perc) {
-			$this->feldolgoz();
-			$this->aktualis_perc=$perc;
-			$this->munka_tomb=[];
-
+		if($indulo_perc==0){
+			$rekord['datum']=substr($line[0], 0, 17).'00';
+			$rekord['idobelyeg']=strtotime($rekord['datum']);
 		}
-		//datum,időbélyeg,bid,bidvol,ask,askvol
-		$idobelyeg=round($line[1]);
-		$datum=$line[0];
-		$perc=substr($datum, 14, 2);
-		$this->ora=substr($datum, 11, 2);
-		$this->munka_tomb['bid'][]=$line[2];
-		$this->munka_tomb['vol'][]=$line[3];
-		$this->munka_tomb['bid_ido'][]=[$line[2],$idobelyeg];
-		$this->munka_tomb['vol_ido'][]=[$line[3],$idobelyeg];
+		if($indulo_perc<$aktualis_perc) {
+			$this->feldolgoz($munka_tomb,$rekord);
+			$rekord['datum']=substr($line[0], 0, 17).'00';
+			$rekord['idobelyeg']=strtotime($rekord['datum']);
+			$aktualis_perc=$indulo_perc;
+			$munka_tomb=[];
+			$munka_tomb['bid_elozo']=$line[2];
+			$munka_tomb['vol_elozo']=$line[3];
+		}
+		$munka_tomb['bid'][]=$line[2];
+		$munka_tomb['vol'][]=$line[3];
+		//$this->munka_tomb['bid_ido'][]=[$line[2],$idobelyeg];
+		//$this->munka_tomb['vol_ido'][]=[$line[3],$idobelyeg];
 	}
-	$this->feldolgoz();
-	$this->aktualis_perc=0;
-	$this->munka_tomb=[];
-}
-	 function feldolgoz($munka_tomb,$elotag='') {
+	$this->feldolgoz($munka_tomb,$rekord);
+	$rekord['datum']=substr($line[0], 0, 17).'00';
+	$rekord['idobelyeg']=strtotime($rekord['datum']);
+	$aktualis_perc=$indulo_perc;
+	$munka_tomb=[];
+	$munka_tomb['bid_elozo']=$line[2];
+	$munka_tomb['vol_elozo']=$line[3];
 
-		 $rekord['datum'] = $datum;
+}
+	 function feldolgoz($munka_tomb,$rekord) {
+		 $rekord=$this->bid_szamol($munka_tomb,$rekord);
+		 $rekord=$this->vol_szamol($munka_tomb,$rekord);
 		 ADAT::beszur_tombbol('egyperces',$rekord , $mezok = 'all');
 	 }
-	 function szamol($munka_tomb,$elotag='') {
-		 $min=0;$max=0;$db=1;$elozo=0;
-		 $rekord['meredekseg']=$this->meredekseg($this->munka_tomb['bid_ido']);
+	 function  bid_szamol($munka_tomb,$rekord,$elozo=''){
+		 $min=0;$max=0;$db=1; $kulonbseg=0;
+
 		 foreach ($munka_tomb as $munka) {
-			 if($db==1){$min=$munka;$max=$munka;$elozo=$munka;}
-			 if($munka>$max){$rekord[$elotag.'max']=$munka;}
-			 if($munka<$min){$rekord[$elotag.'min']=$munka;}
-			 =$ossz+$munka;
+			 if($db==1){$min=$munka;$max=$munka;}
+			 if($munka>$max){$max=$munka;}
+			 if($munka<$min){$min=$munka;}
+			 $ossz =$ossz+$munka;
 			 $db++;
+			 if(!empty($elozo)){$kulonbseg=$elozo-$munka;
+				 if($kulonbseg>$max_kulonbseg){$max_kulonbseg=$kulonbseg;}
+			 $ossz_kulonbseg= $ossz_kulonbseg+$kulonbseg;
+				 $kulonbseg_tomb[]=$kulonbseg;
+			 }
+			 $elozo=$munka;
 
 		 }
-		 $rekord[$elotag.'db']=$db;
-		 $rekord[$elotag.'atlag']=$ossz/$db;
-		 $rekord[$elotag.'szoras']=0;
-		 $rekord[$elotag.'szoras_atlaghoz']=0;
+		 $rekord['szoras']=$ossz_kulonbseg/$db; //szórás átlag
+		 $rekord['sz_max']=$munka; //legnagyobb különbség (szórás)
+		 $rekord['min']=$munka;
+		 $rekord['max']=$munka;
+		 $rekord['db']=$db;
+		 $rekord['atlag']=$ossz/$db;
+
+		 foreach ($munka_tomb as $munka ) {
+			if($munka>$rekord['atlag']){$felso_tomb[]=$munka;}else{$also_tomb[]=$munka;}
+			 $meredekseg=$this->meredekseg($felso_tomb);
+			 $rekord['felso_m']=$meredekseg['meredekseg'];
+			 $rekord['f_utolso']=$meredekseg['utolso'];
+			 $meredekseg=$this->meredekseg($also_tomb);
+			 $rekord['also_m']=$meredekseg['meredekseg'];
+			 $rekord['a_utolso']=$meredekseg['utolso'];
+		 }
+		 foreach ($kulonbseg_tomb as $munka) {
+			 if($munka>$rekord['atlag']){$felso_k_tomb[]=$munka;}else{$also_k_tomb[]=$munka;}
+			 $meredekseg=$this->meredekseg($felso_k_tomb);
+			 $rekord['felso_k_m']=$meredekseg['meredekseg'];
+			 $rekord['f_k_utolso']=$meredekseg['utolso'];
+			 $meredekseg=$this->meredekseg($also_k_tomb);
+			 $rekord['also_k_m']=$meredekseg['meredekseg'];
+			 $rekord['a_k_utolso']=$meredekseg['utolso'];
+
+		 }
 	return $rekord;
 	 }
 
@@ -103,21 +140,23 @@ function futtat($file){
 
 //echo 'vregessio:'. $vRegression->predict(100); //viszatér a századik xhez tartozó y értékkel
 
-function atlag($array) {
-$average = array_sum($array) / count($array);
-return $average;
-}
 function meredekseg($array) {
 $vRegression = new CRegressionLinear($array);
 $elso=$vRegression->predict(1);
-$utolso=$vRegression->predict(count($array);
-=$utolso-$elso;
+$meredekseg['utolso']=$vRegression->predict(count($array);
+$meredekseg['meredekseg']=$utolso-$elso;
 return $meredekseg;
 }
-function beir($rekord) {
-$average = array_($array) / count($array);
-}
 
+
+
+
+
+
+ function atlag($array) {
+	 $average = array_sum($array) / count($array);
+	 return $average;
+ }
  function calculate_median($arr) {
 	 sort($arr);
 	 $count = count($arr); //total numbers in array
